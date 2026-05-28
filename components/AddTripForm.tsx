@@ -26,7 +26,11 @@ import { useImagePicker } from "@/hooks/useImagePicker";
 import { tripSchema, type TripFormData } from "@/types/tripSchema";
 
 interface AddTripFormProps {
-  onAdd: (trip: TripFormData, id: string) => void;
+  onAdd: (
+    trip: TripFormData,
+
+    id: string,
+  ) => void;
 }
 
 export default function AddTripForm({ onAdd }: AddTripFormProps) {
@@ -93,7 +97,23 @@ export default function AddTripForm({ onAdd }: AddTripFormProps) {
 
   const onSubmit = async (data: TripFormData): Promise<void> => {
     try {
-      onAdd(data, tripId);
+      const randomLatitude = 50 + Math.random() * 5;
+
+      const randomLongitude = 18 + Math.random() * 5;
+
+      onAdd(
+        {
+          ...data,
+
+          coordinates: {
+            latitude: randomLatitude,
+
+            longitude: randomLongitude,
+          },
+        },
+
+        tripId,
+      );
     } catch (err) {
       Alert.alert(
         "Could not save",

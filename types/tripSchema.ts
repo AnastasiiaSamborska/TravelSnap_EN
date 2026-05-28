@@ -16,19 +16,31 @@ export const tripSchema = z.object({
 
       "Use YYYY-MM-DD format",
     )
-    .refine((value) => {
-      const date = new Date(value);
+    .refine(
+      (value) => {
+        const date = new Date(value);
 
-      return (
-        !isNaN(date.getTime()) && value === date.toISOString().split("T")[0]
-      );
-    }, "Invalid calendar date"),
+        return (
+          !isNaN(date.getTime()) && value === date.toISOString().split("T")[0]
+        );
+      },
+
+      "Invalid calendar date",
+    ),
 
   rating: z.number().int().min(1, "Rate at least 1 star").max(5),
 
   imageUri: z.string().optional(),
 
   galleryUris: z.array(z.string()).optional(),
+
+  coordinates: z
+    .object({
+      latitude: z.number(),
+
+      longitude: z.number(),
+    })
+    .optional(),
 });
 
 export type TripFormData = z.infer<typeof tripSchema>;

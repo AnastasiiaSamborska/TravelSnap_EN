@@ -5,6 +5,11 @@ export interface TripData {
   rating: number;
   imageUri?: string;
   galleryUris?: string[];
+
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface Trip extends TripData {
