@@ -1,164 +1,121 @@
 import {
-    ActivityIndicator,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-import {
-    UNSPLASH_ACCESS_KEY,
-    UNSPLASH_BASE_URL,
-} from '@/constants/api';
+import { Image } from "expo-image";
 
-import { useFetch } from '@/hooks/useFetch';
+import { UNSPLASH_ACCESS_KEY, UNSPLASH_BASE_URL } from "@/constants/api";
 
-import type { UnsplashResponse } from '@/types/unsplash';
+import { useFetch } from "@/hooks/useFetch";
 
-import { Colors } from '@/constants/Colors';
+import type { UnsplashResponse } from "@/types/unsplash";
+
+import { Colors } from "@/constants/Colors";
 
 interface DestinationCardProps {
   city: string;
 }
 
-export default function DestinationCard({
-  city,
-}: DestinationCardProps) {
-  const url =
-    `${UNSPLASH_BASE_URL}/search/photos?query=${encodeURIComponent(
-      city
-    )}&per_page=1`;
+export default function DestinationCard({ city }: DestinationCardProps) {
+  const url = `${UNSPLASH_BASE_URL}/search/photos?query=${encodeURIComponent(
+    city,
+  )}&per_page=1`;
 
-  const {
-    data,
-    loading,
-    error,
-  } =
-    useFetch<UnsplashResponse>(
-      url,
+  const { data, loading, error } = useFetch<UnsplashResponse>(
+    url,
 
-      {
-        headers: {
-          Authorization:
-            `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-        },
-      }
-    );
+    {
+      headers: {
+        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+      },
+    },
+  );
 
   if (loading) {
     return (
-      <View
-        style={
-          styles.skeleton
-        }
-      >
-        <ActivityIndicator
-          size="large"
-          color={
-            Colors.primary
-          }
-        />
+      <View style={styles.skeleton}>
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
 
-  if (
-    error ||
-    !data?.results?.[0]
-  ) {
+  if (error || !data?.results?.[0]) {
     return null;
   }
 
-  const imageUri =
-    data.results[0]
-      .urls.regular;
+  const imageUri = data.results[0].urls.regular;
 
   return (
-    <Pressable
-      style={
-        styles.card
-      }
-    >
+    <Pressable style={styles.card}>
       <Image
         source={{
           uri: imageUri,
         }}
-        style={
-          styles.image
-        }
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
+        style={styles.image}
       />
 
-      <View
-        style={
-          styles.overlay
-        }
-      >
-        <Text
-          style={
-            styles.city
-          }
-        >
-          {city}
-        </Text>
+      <View style={styles.overlay}>
+        <Text style={styles.city}>{city}</Text>
       </View>
     </Pressable>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    skeleton: {
-      height: 220,
+const styles = StyleSheet.create({
+  skeleton: {
+    height: 220,
 
-      borderRadius: 16,
+    borderRadius: 16,
 
-      backgroundColor:
-        Colors.card,
+    backgroundColor: Colors.card,
 
-      justifyContent:
-        'center',
+    justifyContent: "center",
 
-      alignItems:
-        'center',
+    alignItems: "center",
 
-      marginBottom: 16,
-    },
+    marginBottom: 16,
+  },
 
-    card: {
-      borderRadius: 16,
+  card: {
+    borderRadius: 16,
 
-      overflow: 'hidden',
+    overflow: "hidden",
 
-      marginBottom: 16,
-    },
+    marginBottom: 16,
+  },
 
-    image: {
-      width: '100%',
+  image: {
+    width: "100%",
 
-      height: 220,
-    },
+    height: 220,
+  },
 
-    overlay: {
-      position: 'absolute',
+  overlay: {
+    position: "absolute",
 
-      left: 0,
+    left: 0,
 
-      right: 0,
+    right: 0,
 
-      bottom: 0,
+    bottom: 0,
 
-      backgroundColor:
-        'rgba(0,0,0,0.45)',
+    backgroundColor: "rgba(0,0,0,0.45)",
 
-      padding: 16,
-    },
+    padding: 16,
+  },
 
-    city: {
-      color: 'white',
+  city: {
+    color: "white",
 
-      fontSize: 22,
+    fontSize: 22,
 
-      fontWeight: 'bold',
-    },
-  });
+    fontWeight: "bold",
+  },
+});

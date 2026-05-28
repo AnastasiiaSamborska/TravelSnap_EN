@@ -1,37 +1,22 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import type { Trip } from '@/types/trip';
+import type { Trip } from "@/types/trip";
 
-const STORAGE_KEY =
-  'travelsnap_trips';
+const STORAGE_KEY = "travelsnap_trips";
 
-export async function saveTrips(
-  trips: Trip[]
-): Promise<void> {
+export async function saveTrips(trips: Trip[]): Promise<void> {
   try {
-    const json =
-      JSON.stringify(trips);
+    const json = JSON.stringify(trips);
 
-    await AsyncStorage.setItem(
-      STORAGE_KEY,
-      json
-    );
+    await AsyncStorage.setItem(STORAGE_KEY, json);
   } catch (error) {
-    console.error(
-      'Failed to save trips:',
-      error
-    );
+    console.error("Failed to save trips:", error);
   }
 }
 
-export async function loadTrips(): Promise<
-  Trip[]
-> {
+export async function loadTrips(): Promise<Trip[]> {
   try {
-    const json =
-      await AsyncStorage.getItem(
-        STORAGE_KEY
-      );
+    const json = await AsyncStorage.getItem(STORAGE_KEY);
 
     if (!json) {
       return [];
@@ -39,10 +24,7 @@ export async function loadTrips(): Promise<
 
     return JSON.parse(json);
   } catch (error) {
-    console.error(
-      'Failed to load trips:',
-      error
-    );
+    console.error("Failed to load trips:", error);
 
     return [];
   }

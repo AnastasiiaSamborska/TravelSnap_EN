@@ -1,7 +1,7 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
-import { Colors } from '@/constants/Colors';
+import { Colors } from "@/constants/Colors";
 
 const TAB_ICON_SIZE = 24;
 
@@ -21,7 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color }) => (
             <Ionicons name="home" size={TAB_ICON_SIZE} color={color} />
           ),
@@ -30,16 +30,20 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: "Explore",
           tabBarIcon: ({ color }) => (
-            <Ionicons name="compass-outline" size={TAB_ICON_SIZE} color={color} />
+            <Ionicons
+              name="compass-outline"
+              size={TAB_ICON_SIZE}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: "Profile",
           tabBarIcon: ({ color }) => (
             <Ionicons name="person" size={TAB_ICON_SIZE} color={color} />
           ),

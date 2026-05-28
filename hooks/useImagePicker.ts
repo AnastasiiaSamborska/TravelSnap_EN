@@ -1,7 +1,7 @@
-import { Alert } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
+import { Alert } from "react-native";
 
-import { saveImageToTrip } from '@/utils/imageStorage';
+import { saveImageToTrip } from "@/utils/imageStorage";
 
 interface UseImagePickerOptions {
   tripId: string;
@@ -9,10 +9,14 @@ interface UseImagePickerOptions {
   aspect?: [number, number];
 }
 
-export function useImagePicker({ tripId, onSaved, aspect = [4, 3] }: UseImagePickerOptions) {
+export function useImagePicker({
+  tripId,
+  onSaved,
+  aspect = [4, 3],
+}: UseImagePickerOptions) {
   const pickImage = async (): Promise<void> => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect,
       quality: 0.8,
@@ -25,12 +29,15 @@ export function useImagePicker({ tripId, onSaved, aspect = [4, 3] }: UseImagePic
 
   const takePhoto = async (): Promise<void> => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Camera access is required to take photos.');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission denied",
+        "Camera access is required to take photos.",
+      );
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect,
       quality: 0.8,
@@ -42,10 +49,10 @@ export function useImagePicker({ tripId, onSaved, aspect = [4, 3] }: UseImagePic
   };
 
   const handleAddPhoto = (): void => {
-    Alert.alert('Add photo', 'Choose a source', [
-      { text: 'Gallery', onPress: () => void pickImage() },
-      { text: 'Camera', onPress: () => void takePhoto() },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Add photo", "Choose a source", [
+      { text: "Gallery", onPress: () => void pickImage() },
+      { text: "Camera", onPress: () => void takePhoto() },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 

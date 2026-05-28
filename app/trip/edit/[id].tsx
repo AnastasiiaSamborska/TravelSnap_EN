@@ -1,112 +1,44 @@
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
-} from 'react-native';
+} from "react-native";
 
-import {
-  Stack,
-  router,
-  useLocalSearchParams,
-} from 'expo-router';
+import { useEffect, useMemo } from "react";
 
-import {
-  useEffect,
-  useMemo,
-} from 'react';
+import { Stack, router, useLocalSearchParams } from "expo-router";
 
-import {
-  Controller,
-  useForm,
-} from 'react-hook-form';
+import { Controller, useForm } from "react-hook-form";
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Colors } from '@/constants/Colors';
+import { Ionicons } from "@expo/vector-icons";
 
-import { useTrips } from '@/contexts/TripContext';
+import { Colors } from "@/constants/Colors";
 
-import {
-  tripSchema,
-  type TripFormData,
-} from '@/types/tripSchema';
+import { useTrips } from "@/contexts/TripContext";
+
+import { useImagePicker } from "@/hooks/useImagePicker";
+
+import { tripSchema, type TripFormData } from "@/types/tripSchema";
 
 export default function EditTripScreen() {
-  const { id } =
-    useLocalSearchParams<{
-      id: string;
-    }>();
+  const { id } = useLocalSearchParams<{
+    id: string;
+  }>();
 
-  const {
-    trips,
-    updateTrip,
-  } = useTrips();
+  const { trips, updateTrip } = useTrips();
 
-  const trip =
-    useMemo(
-      () =>
-        trips.find(
-          (t) =>
-            t.id === id
-        ),
+  const trip = useMemo(
+    () => trips.find((t) => t.id === id),
 
-      [trips, id]
-    );
-
-  const currentTitle =
-    trip?.title
-      .trim()
-      .toLowerCase();
-
-  const existingTitles =
-    useMemo(
-      () =>
-        trips.map((t) =>
-          t.title
-            .trim()
-            .toLowerCase()
-        ),
-
-      [trips]
-    );
-
-  const schema =
-    useMemo(
-      () =>
-        tripSchema.extend({
-          title:
-            tripSchema.shape.title.refine(
-              (value) => {
-                const used =
-                  existingTitles.filter(
-                    (t) =>
-                      t !==
-                      currentTitle
-                  );
-
-                return !used.includes(
-                  value
-                    .trim()
-                    .toLowerCase()
-                );
-              },
-
-              {
-                message:
-                  'This title is already used by another trip',
-              }
-            ),
-        }),
-
-      [
-        existingTitles,
-        currentTitle,
-      ]
-    );
+    [trips, id],
+  );
 
   const {
     control,
@@ -115,18 +47,26 @@ export default function EditTripScreen() {
 
     reset,
 
-    formState: {
-      isSubmitting,
-    },
-  } =
-    useForm<TripFormData>({
-      resolver:
-        zodResolver(
-          schema
-        ),
+    setValue,
 
-      mode: 'onBlur',
-    });
+    formState: { isSubmitting },
+  } = useForm<TripFormData>({
+    resolver: zodResolver(tripSchema),
+
+    mode: "onBlur",
+  });
+
+  const { handleAddPhoto } = useImagePicker({
+    tripId: trip?.id ?? "",
+
+    onSaved: (uri) => {
+      setValue("imageUri", uri);
+
+      setValue("galleryUris", [...(trip?.galleryUris ?? []), uri]);
+    },
+
+    aspect: [16, 9],
+  });
 
   useEffect(() => {
     if (!trip) {
@@ -134,64 +74,42 @@ export default function EditTripScreen() {
     }
 
     reset({
-      title:
-        trip.title,
+      title: trip.title,
 
-      destination:
-        trip.destination,
+      destination: trip.destination,
 
-      date:
-        trip.date,
+      date: trip.date,
 
-      rating:
-        trip.rating,
+      rating: trip.rating,
 
-      imageUri:
-        trip.imageUri,
+      imageUri: trip.imageUri,
 
-      galleryUris:
-        trip.galleryUris,
+      galleryUris: trip.galleryUris,
     });
   }, [trip, reset]);
 
-  const onSubmit =
-    async (
-      data: TripFormData
-    ): Promise<void> => {
-      if (!trip) {
-        return;
-      }
+  const onSubmit = async (data: TripFormData): Promise<void> => {
+    if (!trip) {
+      return;
+    }
 
-      try {
-        await updateTrip(
-          trip.id,
-          data
-        );
+    try {
+      await updateTrip(trip.id, data);
 
-        router.back();
-      } catch (err) {
-        Alert.alert(
-          'Could not update',
+      router.back();
+    } catch (err) {
+      Alert.alert(
+        "Could not update",
 
-          String(err)
-        );
-      }
-    };
+        String(err),
+      );
+    }
+  };
 
   if (!trip) {
     return (
-      <View
-        style={
-          styles.centered
-        }
-      >
-        <Text
-          style={
-            styles.notFound
-          }
-        >
-          Trip not found
-        </Text>
+      <View style={styles.centered}>
+        <Text style={styles.notFound}>Trip not found</Text>
       </View>
     );
   }
@@ -200,58 +118,29 @@ export default function EditTripScreen() {
     <>
       <Stack.Screen
         options={{
-          title:
-            'Edit Trip',
+          title: "Edit Trip",
         }}
       />
 
-      <View
-        style={
-          styles.screen
-        }
-      >
+      <View style={styles.container}>
+        <Text style={styles.title}>Edit trip</Text>
+
         <Controller
           control={control}
           name="title"
-          render={({
-            field,
-            fieldState,
-          }) => (
+          render={({ field, fieldState }) => (
             <>
               <TextInput
-                style={[
-                  styles.input,
-
-                  fieldState.error &&
-                    styles.inputError,
-                ]}
+                style={[styles.input, fieldState.error && styles.inputError]}
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
                 placeholder="Title"
-                placeholderTextColor={
-                  Colors.textSecondary
-                }
-                value={
-                  field.value
-                }
-                onChangeText={
-                  field.onChange
-                }
-                onBlur={
-                  field.onBlur
-                }
+                placeholderTextColor={Colors.textSecondary}
               />
 
               {fieldState.error && (
-                <Text
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {
-                    fieldState
-                      .error
-                      .message
-                  }
-                </Text>
+                <Text style={styles.errorText}>{fieldState.error.message}</Text>
               )}
             </>
           )}
@@ -260,45 +149,19 @@ export default function EditTripScreen() {
         <Controller
           control={control}
           name="destination"
-          render={({
-            field,
-            fieldState,
-          }) => (
+          render={({ field, fieldState }) => (
             <>
               <TextInput
-                style={[
-                  styles.input,
-
-                  fieldState.error &&
-                    styles.inputError,
-                ]}
+                style={[styles.input, fieldState.error && styles.inputError]}
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
                 placeholder="Destination"
-                placeholderTextColor={
-                  Colors.textSecondary
-                }
-                value={
-                  field.value
-                }
-                onChangeText={
-                  field.onChange
-                }
-                onBlur={
-                  field.onBlur
-                }
+                placeholderTextColor={Colors.textSecondary}
               />
 
               {fieldState.error && (
-                <Text
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {
-                    fieldState
-                      .error
-                      .message
-                  }
-                </Text>
+                <Text style={styles.errorText}>{fieldState.error.message}</Text>
               )}
             </>
           )}
@@ -307,45 +170,19 @@ export default function EditTripScreen() {
         <Controller
           control={control}
           name="date"
-          render={({
-            field,
-            fieldState,
-          }) => (
+          render={({ field, fieldState }) => (
             <>
               <TextInput
-                style={[
-                  styles.input,
-
-                  fieldState.error &&
-                    styles.inputError,
-                ]}
+                style={[styles.input, fieldState.error && styles.inputError]}
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={
-                  Colors.textSecondary
-                }
-                value={
-                  field.value
-                }
-                onChangeText={
-                  field.onChange
-                }
-                onBlur={
-                  field.onBlur
-                }
+                placeholderTextColor={Colors.textSecondary}
               />
 
               {fieldState.error && (
-                <Text
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {
-                    fieldState
-                      .error
-                      .message
-                  }
-                </Text>
+                <Text style={styles.errorText}>{fieldState.error.message}</Text>
               )}
             </>
           )}
@@ -354,85 +191,71 @@ export default function EditTripScreen() {
         <Controller
           control={control}
           name="rating"
-          render={({
-            field,
-            fieldState,
-          }) => (
+          render={({ field, fieldState }) => (
             <>
               <TextInput
-                style={[
-                  styles.input,
-
-                  fieldState.error &&
-                    styles.inputError,
-                ]}
-                placeholder="Rating"
-                placeholderTextColor={
-                  Colors.textSecondary
-                }
-                value={String(
-                  field.value
-                )}
-                onChangeText={(
-                  text
-                ) =>
-                  field.onChange(
-                    Number(
-                      text
-                    )
-                  )
-                }
+                style={[styles.input, fieldState.error && styles.inputError]}
+                value={String(field.value)}
+                onChangeText={(text) => field.onChange(Number(text))}
                 keyboardType="numeric"
-                onBlur={
-                  field.onBlur
-                }
+                onBlur={field.onBlur}
+                placeholder="Rating"
+                placeholderTextColor={Colors.textSecondary}
               />
 
               {fieldState.error && (
-                <Text
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {
-                    fieldState
-                      .error
-                      .message
-                  }
-                </Text>
+                <Text style={styles.errorText}>{fieldState.error.message}</Text>
               )}
             </>
           )}
         />
 
-        <Pressable
-          disabled={
-            isSubmitting
-          }
-          onPress={handleSubmit(
-            onSubmit
-          )}
-          style={[
-            styles.saveButton,
+        <Controller
+          control={control}
+          name="imageUri"
+          render={({ field }) =>
+            field.value ? (
+              <View style={styles.previewContainer}>
+                <Image
+                  source={{
+                    uri: field.value,
+                  }}
+                  style={styles.preview}
+                />
 
-            isSubmitting &&
-              styles.saveButtonDisabled,
-          ]}
+                <Pressable
+                  style={styles.changePhotoButton}
+                  onPress={handleAddPhoto}
+                >
+                  <Text style={styles.changePhotoText}>Add another photo</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.photoPlaceholder}
+                onPress={handleAddPhoto}
+              >
+                <Ionicons
+                  name="camera-outline"
+                  size={32}
+                  color={Colors.textSecondary}
+                />
+
+                <Text style={styles.photoPlaceholderText}>Add a photo</Text>
+              </Pressable>
+            )
+          }
+        />
+
+        <Pressable
+          disabled={isSubmitting}
+          onPress={handleSubmit(onSubmit)}
+          style={[styles.button, isSubmitting && styles.buttonDisabled]}
         >
           {isSubmitting ? (
-            <ActivityIndicator
-              color={
-                Colors.background
-              }
-            />
+            <ActivityIndicator color={Colors.background} />
           ) : (
-            <Text
-              style={
-                styles.saveButtonText
-              }
-            >
-              Save Changes
-            </Text>
+            <Text style={styles.buttonText}>Update</Text>
           )}
         </Pressable>
       </View>
@@ -440,99 +263,152 @@ export default function EditTripScreen() {
   );
 }
 
-const styles =
-  StyleSheet.create({
-    screen: {
-      flex: 1,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
 
-      backgroundColor:
-        Colors.background,
+    backgroundColor: Colors.background,
 
-      padding: 24,
-    },
+    padding: 20,
+  },
 
-    centered: {
-      flex: 1,
+  centered: {
+    flex: 1,
 
-      alignItems:
-        'center',
+    alignItems: "center",
 
-      justifyContent:
-        'center',
+    justifyContent: "center",
 
-      backgroundColor:
-        Colors.background,
-    },
+    backgroundColor: Colors.background,
+  },
 
-    notFound: {
-      color:
-        Colors.textSecondary,
+  notFound: {
+    color: Colors.textSecondary,
 
-      fontSize: 16,
-    },
+    fontSize: 16,
+  },
 
-    input: {
-      backgroundColor:
-        Colors.card,
+  title: {
+    fontSize: 24,
 
-      borderWidth: 1,
+    fontWeight: "bold",
 
-      borderColor:
-        Colors.border,
+    color: Colors.textPrimary,
 
-      borderRadius: 10,
+    marginBottom: 20,
+  },
 
-      padding: 14,
+  input: {
+    backgroundColor: Colors.inputBg,
 
-      color:
-        Colors.textPrimary,
+    borderWidth: 1,
 
-      marginBottom: 8,
+    borderColor: Colors.inputBorder,
 
-      fontSize: 16,
-    },
+    borderRadius: 8,
 
-    inputError: {
-      borderColor:
-        Colors.accent,
+    padding: 12,
 
-      borderWidth: 1.5,
-    },
+    marginBottom: 8,
 
-    errorText: {
-      color:
-        Colors.accent,
+    color: Colors.textPrimary,
 
-      fontSize: 12,
+    fontSize: 16,
+  },
 
-      marginBottom: 8,
-    },
+  inputError: {
+    borderColor: Colors.accent,
 
-    saveButton: {
-      backgroundColor:
-        Colors.primary,
+    borderWidth: 1.5,
+  },
 
-      padding: 16,
+  errorText: {
+    color: Colors.accent,
 
-      borderRadius: 10,
+    fontSize: 12,
 
-      alignItems:
-        'center',
+    marginBottom: 8,
+  },
 
-      marginTop: 8,
-    },
+  photoPlaceholder: {
+    borderWidth: 1.5,
 
-    saveButtonDisabled:
-      {
-        opacity: 0.5,
-      },
+    borderColor: Colors.inputBorder,
 
-    saveButtonText: {
-      color:
-        Colors.background,
+    borderStyle: "dashed",
 
-      fontWeight: 'bold',
+    borderRadius: 8,
 
-      fontSize: 16,
-    },
-  });
+    height: 100,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: 8,
+
+    marginBottom: 12,
+  },
+
+  photoPlaceholderText: {
+    color: Colors.textSecondary,
+
+    fontSize: 14,
+  },
+
+  previewContainer: {
+    marginBottom: 12,
+
+    gap: 8,
+  },
+
+  preview: {
+    width: "100%",
+
+    height: 200,
+
+    borderRadius: 8,
+  },
+
+  changePhotoButton: {
+    alignItems: "center",
+
+    paddingVertical: 8,
+
+    borderRadius: 8,
+
+    backgroundColor: Colors.inputBg,
+  },
+
+  changePhotoText: {
+    color: Colors.primary,
+
+    fontSize: 14,
+
+    fontWeight: "600",
+  },
+
+  button: {
+    backgroundColor: Colors.primary,
+
+    paddingVertical: 14,
+
+    borderRadius: 8,
+
+    alignItems: "center",
+
+    marginTop: 16,
+  },
+
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+
+  buttonText: {
+    color: Colors.background,
+
+    fontWeight: "600",
+
+    fontSize: 16,
+  },
+});

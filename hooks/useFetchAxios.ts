@@ -1,10 +1,6 @@
-import {
-    useCallback,
-    useEffect,
-    useState,
-} from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-import axios from 'axios';
+import axios from "axios";
 
 interface FetchState<T> {
   data: T | null;
@@ -16,51 +12,28 @@ interface FetchState<T> {
   refetch: () => void;
 }
 
-export function useFetchAxios<T>(
-  url: string
-): FetchState<T> {
-  const [data, setData] =
-    useState<T | null>(
-      null
-    );
+export function useFetchAxios<T>(url: string): FetchState<T> {
+  const [data, setData] = useState<T | null>(null);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState<string | null>(
-      null
-    );
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchData =
-    useCallback(
-      async (): Promise<void> => {
-        try {
-          setLoading(true);
+  const fetchData = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
 
-          setError(null);
+      setError(null);
 
-          const response =
-            await axios.get<T>(
-              url
-            );
+      const response = await axios.get<T>(url);
 
-          setData(
-            response.data
-          );
-        } catch (err) {
-          setError(
-            String(err)
-          );
-        } finally {
-          setLoading(false);
-        }
-      },
-
-      [url]
-    );
+      setData(response.data);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
 
   useEffect(() => {
     void fetchData();
@@ -70,7 +43,6 @@ export function useFetchAxios<T>(
     data,
     loading,
     error,
-    refetch:
-      fetchData,
+    refetch: fetchData,
   };
 }

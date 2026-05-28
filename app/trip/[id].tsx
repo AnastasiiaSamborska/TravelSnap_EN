@@ -1,500 +1,287 @@
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
-} from 'react-native';
+} from "react-native";
 
-import {
-  useEffect,
-  useMemo,
-} from 'react';
+import { Image } from "expo-image";
 
-import {
-  router,
-  useLocalSearchParams,
-} from 'expo-router';
+import { Stack, router, useLocalSearchParams } from "expo-router";
 
-import {
-  Controller,
-  useForm,
-} from 'react-hook-form';
+import { Ionicons } from "@expo/vector-icons";
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Colors } from "@/constants/Colors";
 
-import {
-  Colors,
-} from '@/constants/Colors';
+import { useTrips } from "@/contexts/TripContext";
 
-import {
-  useTrips,
-} from '@/contexts/TripContext';
+import RatingStars from "@/components/RatingStars";
 
-import {
-  tripSchema,
-  type TripFormData,
-} from '@/types/tripSchema';
+import CountryCard from "@/components/CountryCard";
 
-export default function EditTripScreen() {
-  const { id } =
-    useLocalSearchParams<{
-      id: string;
-    }>();
+export default function TripDetailsScreen() {
+  const { id } = useLocalSearchParams<{
+    id: string;
+  }>();
 
-  const {
-    trips,
-    updateTrip,
-  } = useTrips();
+  const { trips, deleteTrip } = useTrips();
 
-  const trip =
-    useMemo(
-      () =>
-        trips.find(
-          (t) =>
-            t.id === id
-        ),
-
-      [trips, id]
-    );
-
-  const {
-    control,
-
-    handleSubmit,
-
-    reset,
-
-    formState: {
-      isSubmitting,
-    },
-  } =
-    useForm<TripFormData>({
-      resolver:
-        zodResolver(
-          tripSchema
-        ),
-
-      mode: 'onBlur',
-    });
-
-  useEffect(() => {
-    if (!trip) {
-      return;
-    }
-
-    reset({
-      title:
-        trip.title,
-
-      destination:
-        trip.destination,
-
-      date:
-        trip.date,
-
-      rating:
-        trip.rating,
-
-      imageUri:
-        trip.imageUri,
-
-      galleryUris:
-        trip.galleryUris,
-    });
-  }, [trip, reset]);
-
-  const onSubmit =
-    async (
-      data: TripFormData
-    ): Promise<void> => {
-      if (!trip) {
-        return;
-      }
-
-      try {
-        await updateTrip(
-          trip.id,
-          data
-        );
-
-        router.back();
-      } catch (err) {
-        Alert.alert(
-          'Could not update',
-
-          String(err)
-        );
-      }
-    };
+  const trip = trips.find((t) => t.id === id);
 
   if (!trip) {
     return (
-      <View
-        style={
-          styles.centered
-        }
-      >
-        <Text
-          style={
-            styles.notFound
-          }
-        >
-          Trip not found
-        </Text>
+      <View style={styles.centered}>
+        <Text style={styles.notFound}>Trip not found</Text>
       </View>
     );
   }
 
+  const handleDelete = (): void => {
+    Alert.alert(
+      "Delete trip",
+
+      "Are you sure you want to delete this trip?",
+
+      [
+        {
+          text: "Cancel",
+
+          style: "cancel",
+        },
+
+        {
+          text: "Delete",
+
+          style: "destructive",
+
+          onPress: () => {
+            deleteTrip(trip.id);
+
+            router.back();
+          },
+        },
+      ],
+    );
+  };
+
   return (
-    <View
-      style={
-        styles.container
-      }
-    >
-      <Text
-        style={
-          styles.title
-        }
-      >
-        Edit trip
-      </Text>
-
-      <Controller
-        control={control}
-        name="title"
-        render={({
-          field,
-          fieldState,
-        }) => (
-          <>
-            <TextInput
-              style={[
-                styles.input,
-
-                fieldState.error &&
-                  styles.inputError,
-              ]}
-              value={
-                field.value
-              }
-              onChangeText={
-                field.onChange
-              }
-              onBlur={
-                field.onBlur
-              }
-              placeholder="Title"
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-            />
-
-            {fieldState.error && (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {
-                  fieldState
-                    .error
-                    .message
-                }
-              </Text>
-            )}
-          </>
-        )}
+    <>
+      <Stack.Screen
+        options={{
+          title: trip.title,
+        }}
       />
 
-      <Controller
-        control={control}
-        name="destination"
-        render={({
-          field,
-          fieldState,
-        }) => (
-          <>
-            <TextInput
-              style={[
-                styles.input,
-
-                fieldState.error &&
-                  styles.inputError,
-              ]}
-              value={
-                field.value
-              }
-              onChangeText={
-                field.onChange
-              }
-              onBlur={
-                field.onBlur
-              }
-              placeholder="Destination"
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-            />
-
-            {fieldState.error && (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {
-                  fieldState
-                    .error
-                    .message
-                }
-              </Text>
-            )}
-          </>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="date"
-        render={({
-          field,
-          fieldState,
-        }) => (
-          <>
-            <TextInput
-              style={[
-                styles.input,
-
-                fieldState.error &&
-                  styles.inputError,
-              ]}
-              value={
-                field.value
-              }
-              onChangeText={
-                field.onChange
-              }
-              onBlur={
-                field.onBlur
-              }
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-            />
-
-            {fieldState.error && (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {
-                  fieldState
-                    .error
-                    .message
-                }
-              </Text>
-            )}
-          </>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="rating"
-        render={({
-          field,
-          fieldState,
-        }) => (
-          <>
-            <TextInput
-              style={[
-                styles.input,
-
-                fieldState.error &&
-                  styles.inputError,
-              ]}
-              value={String(
-                field.value
-              )}
-              onChangeText={(
-                text
-              ) =>
-                field.onChange(
-                  Number(
-                    text
-                  )
-                )
-              }
-              keyboardType="numeric"
-              onBlur={
-                field.onBlur
-              }
-              placeholder="Rating"
-              placeholderTextColor={
-                Colors.textSecondary
-              }
-            />
-
-            {fieldState.error && (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {
-                  fieldState
-                    .error
-                    .message
-                }
-              </Text>
-            )}
-          </>
-        )}
-      />
-
-      <Pressable
-        disabled={
-          isSubmitting
-        }
-        onPress={handleSubmit(
-          onSubmit
-        )}
-        style={[
-          styles.button,
-
-          isSubmitting &&
-            styles.buttonDisabled,
-        ]}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator
-            color={
-              Colors.background
-            }
+      <ScrollView style={styles.container}>
+        {trip.imageUri && (
+          <Image
+            source={{
+              uri: trip.imageUri,
+            }}
+            placeholder={{
+              blurhash: "LGF5]+Yk^6#M@-5c,1J5@[or[Q6.",
+            }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={300}
+            style={styles.heroImage}
           />
-        ) : (
-          <Text
-            style={
-              styles.buttonText
-            }
-          >
-            Update
-          </Text>
         )}
-      </Pressable>
-    </View>
+
+        <View style={styles.content}>
+          <Text style={styles.title}>{trip.title}</Text>
+
+          <Text style={styles.destination}>{trip.destination}</Text>
+
+          <Text style={styles.date}>{trip.date}</Text>
+
+          <View style={styles.separator} />
+
+          <RatingStars rating={trip.rating} />
+
+          <CountryCard countryName={trip.destination} />
+
+          {trip.galleryUris && trip.galleryUris.length > 0 && (
+            <>
+              <Text style={styles.galleryTitle}>Gallery</Text>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {trip.galleryUris.map((uri, index) => (
+                  <Image
+                    key={index}
+                    source={{
+                      uri,
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                    style={styles.galleryImage}
+                  />
+                ))}
+              </ScrollView>
+            </>
+          )}
+
+          <Pressable
+            style={styles.editButton}
+            onPress={() => router.push(`/trip/edit/${trip.id}`)}
+          >
+            <Ionicons
+              name="create-outline"
+              size={18}
+              color={Colors.background}
+            />
+
+            <Text style={styles.buttonText}>Edit Trip</Text>
+          </Pressable>
+
+          <Pressable style={styles.deleteButton} onPress={handleDelete}>
+            <Ionicons
+              name="trash-outline"
+              size={18}
+              color={Colors.background}
+            />
+
+            <Text style={styles.buttonText}>Delete Trip</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
 
-      backgroundColor:
-        Colors.background,
+    backgroundColor: Colors.background,
+  },
 
-      padding: 20,
-    },
+  centered: {
+    flex: 1,
 
-    centered: {
-      flex: 1,
+    justifyContent: "center",
 
-      alignItems:
-        'center',
+    alignItems: "center",
 
-      justifyContent:
-        'center',
+    backgroundColor: Colors.background,
+  },
 
-      backgroundColor:
-        Colors.background,
-    },
+  notFound: {
+    color: Colors.textSecondary,
 
-    notFound: {
-      color:
-        Colors.textSecondary,
+    fontSize: 16,
+  },
 
-      fontSize: 16,
-    },
+  heroImage: {
+    width: "100%",
 
-    title: {
-      fontSize: 24,
+    height: 260,
+  },
 
-      fontWeight: 'bold',
+  content: {
+    padding: 20,
+  },
 
-      color:
-        Colors.textPrimary,
+  title: {
+    fontSize: 28,
 
-      marginBottom: 20,
-    },
+    fontWeight: "bold",
 
-    input: {
-      backgroundColor:
-        Colors.inputBg,
+    color: Colors.textPrimary,
+  },
 
-      borderWidth: 1,
+  destination: {
+    fontSize: 18,
 
-      borderColor:
-        Colors.inputBorder,
+    color: Colors.primary,
 
-      borderRadius: 8,
+    marginTop: 8,
+  },
 
-      padding: 12,
+  date: {
+    fontSize: 14,
 
-      marginBottom: 8,
+    color: Colors.textSecondary,
 
-      color:
-        Colors.textPrimary,
+    marginTop: 6,
+  },
 
-      fontSize: 16,
-    },
+  separator: {
+    borderBottomWidth: 1,
 
-    inputError: {
-      borderColor:
-        Colors.accent,
+    borderBottomColor: Colors.border,
 
-      borderWidth: 1.5,
-    },
+    marginVertical: 20,
+  },
 
-    errorText: {
-      color:
-        Colors.accent,
+  galleryTitle: {
+    fontSize: 20,
 
-      fontSize: 12,
+    fontWeight: "bold",
 
-      marginBottom: 8,
-    },
+    color: Colors.textPrimary,
 
-    button: {
-      backgroundColor:
-        Colors.primary,
+    marginTop: 24,
 
-      paddingVertical: 14,
+    marginBottom: 12,
+  },
 
-      borderRadius: 8,
+  galleryImage: {
+    width: 180,
 
-      alignItems:
-        'center',
+    height: 120,
 
-      marginTop: 16,
-    },
+    borderRadius: 16,
 
-    buttonDisabled:
-      {
-        opacity: 0.5,
-      },
+    marginRight: 12,
+  },
 
-    buttonText: {
-      color:
-        Colors.background,
+  editButton: {
+    flexDirection: "row",
 
-      fontWeight: '600',
+    alignItems: "center",
 
-      fontSize: 16,
-    },
-  });
+    justifyContent: "center",
+
+    gap: 8,
+
+    backgroundColor: Colors.primary,
+
+    paddingVertical: 14,
+
+    borderRadius: 10,
+
+    marginTop: 28,
+  },
+
+  deleteButton: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: 8,
+
+    backgroundColor: Colors.accent,
+
+    paddingVertical: 14,
+
+    borderRadius: 10,
+
+    marginTop: 12,
+
+    marginBottom: 40,
+  },
+
+  buttonText: {
+    color: Colors.background,
+
+    fontWeight: "bold",
+
+    fontSize: 16,
+  },
+});

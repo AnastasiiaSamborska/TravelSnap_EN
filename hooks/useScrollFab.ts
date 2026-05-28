@@ -1,9 +1,9 @@
-import { useCallback, useRef } from 'react';
-import { Animated } from 'react-native';
+import { useCallback, useRef } from "react";
+import { Animated } from "react-native";
 
-const SCROLL_SENSITIVITY = 5;   // minimum px delta to trigger show/hide
-const FAB_HIDDEN_OFFSET = 100;  // translateY when hidden (pushes FAB off-screen)
-const ANIMATION_DURATION = 200; // ms
+const SCROLL_SENSITIVITY = 5;
+const FAB_HIDDEN_OFFSET = 100;
+const ANIMATION_DURATION = 200;
 
 export function useScrollFab() {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -35,7 +35,7 @@ export function useScrollFab() {
         animateFab(0);
       }
     },
-    [translateY]
+    [translateY],
   );
 
   return { translateY, onScroll };

@@ -1,16 +1,26 @@
-import { useState } from 'react';
-import { Alert, Animated, Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import {
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-import { useTrips } from '@/contexts/TripContext';
-import { useImagePicker } from '@/hooks/useImagePicker';
-import { useScrollFab } from '@/hooks/useScrollFab';
-import { deleteImage } from '@/utils/imageStorage';
-import PhotoViewerModal from '@/components/PhotoViewerModal';
-import { Colors } from '@/constants/Colors';
+import PhotoViewerModal from "@/components/PhotoViewerModal";
+import { Colors } from "@/constants/Colors";
+import { useTrips } from "@/contexts/TripContext";
+import { useImagePicker } from "@/hooks/useImagePicker";
+import { useScrollFab } from "@/hooks/useScrollFab";
+import { deleteImage } from "@/utils/imageStorage";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 16) / 3;
 
 export default function GalleryScreen() {
@@ -37,16 +47,20 @@ export default function GalleryScreen() {
   };
 
   const handleDelete = (uri: string): void => {
-    Alert.alert('Delete photo', 'Are you sure?', [
-      { text: 'Delete', style: 'destructive', onPress: () => void confirmDelete(uri) },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Delete photo", "Are you sure?", [
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => void confirmDelete(uri),
+      },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 
   if (!trip) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Gallery' }} />
+        <Stack.Screen options={{ title: "Gallery" }} />
         <View style={styles.centered}>
           <Text style={styles.errorText}>Trip not found.</Text>
         </View>
@@ -60,7 +74,9 @@ export default function GalleryScreen() {
   return (
     <>
       <Stack.Screen
-        options={{ title: `${trip.title} — ${photoCount} photo${photoCount !== 1 ? 's' : ''}` }}
+        options={{
+          title: `${trip.title} — ${photoCount} photo${photoCount !== 1 ? "s" : ""}`,
+        }}
       />
 
       <View style={styles.screen}>
@@ -74,7 +90,11 @@ export default function GalleryScreen() {
           onScroll={onScroll}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="images-outline" size={64} color={Colors.textSecondary} />
+              <Ionicons
+                name="images-outline"
+                size={64}
+                color={Colors.textSecondary}
+              />
               <Text style={styles.emptyTitle}>No photos yet</Text>
               <Text style={styles.emptySubtitle}>Add your first!</Text>
             </View>
@@ -86,9 +106,15 @@ export default function GalleryScreen() {
           )}
         />
 
-        <Animated.View style={[styles.fab, { transform: [{ translateY: fabTranslateY }] }]}>
+        <Animated.View
+          style={[styles.fab, { transform: [{ translateY: fabTranslateY }] }]}
+        >
           <Pressable style={styles.fabInner} onPress={handleAddPhoto}>
-            <Ionicons name="camera-outline" size={28} color={Colors.background} />
+            <Ionicons
+              name="camera-outline"
+              size={28}
+              color={Colors.background}
+            />
           </Pressable>
         </Animated.View>
       </View>
@@ -125,14 +151,14 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingTop: 120,
     gap: 12,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.textPrimary,
   },
   emptySubtitle: {
@@ -140,15 +166,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -156,14 +182,14 @@ const styles = StyleSheet.create({
   fabInner: {
     flex: 1,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   centered: {
     flex: 1,
     backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   errorText: {
     fontSize: 16,

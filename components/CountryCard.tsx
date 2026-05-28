@@ -1,190 +1,117 @@
-import {
-    Image,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
 
-import { Colors } from '@/constants/Colors';
+import { Image } from "expo-image";
 
-import {
-    RESTCOUNTRIES_BASE_URL,
-} from '@/constants/api';
+import { Colors } from "@/constants/Colors";
 
-import { useFetchAxios } from '@/hooks/useFetchAxios';
+import { RESTCOUNTRIES_BASE_URL } from "@/constants/api";
 
-import type { Country } from '@/types/country';
+import { useFetchAxios } from "@/hooks/useFetchAxios";
+
+import type { Country } from "@/types/country";
 
 interface CountryCardProps {
   countryName: string;
 }
 
-export default function CountryCard({
-  countryName,
-}: CountryCardProps) {
-  const url =
-    `${RESTCOUNTRIES_BASE_URL}/name/${encodeURIComponent(
-      countryName
-    )}`;
+export default function CountryCard({ countryName }: CountryCardProps) {
+  const url = `${RESTCOUNTRIES_BASE_URL}/name/${encodeURIComponent(
+    countryName,
+  )}`;
 
-  const {
-    data,
-    loading,
-    error,
-  } =
-    useFetchAxios<
-      Country[]
-    >(url);
+  const { data, loading, error } = useFetchAxios<Country[]>(url);
 
   if (loading) {
-    return (
-      <View
-        style={
-          styles.skeleton
-        }
-      />
-    );
+    return <View style={styles.skeleton} />;
   }
 
-  if (
-    error ||
-    !data?.[0]
-  ) {
+  if (error || !data?.[0]) {
     return null;
   }
 
-  const country =
-    data[0];
+  const country = data[0];
 
-  const currency =
-    Object.values(
-      country.currencies ??
-        {}
-    )[0];
+  const currency = Object.values(country.currencies ?? {})[0];
 
   return (
-    <View
-      style={
-        styles.card
-      }
-    >
+    <View style={styles.card}>
       <Image
         source={{
-          uri: country
-            .flags.png,
+          uri: country.flags.png,
         }}
-        style={
-          styles.flag
-        }
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
+        style={styles.flag}
       />
 
-      <View
-        style={
-          styles.info
-        }
-      >
-        <Text
-          style={
-            styles.name
-          }
-        >
-          {
-            country.name
-              .common
-          }
-        </Text>
+      <View style={styles.info}>
+        <Text style={styles.name}>{country.name.common}</Text>
 
-        <Text
-          style={
-            styles.meta
-          }
-        >
-          Capital:{' '}
-          {country
-            .capital?.[0] ??
-            '-'}
-        </Text>
+        <Text style={styles.meta}>Capital: {country.capital?.[0] ?? "-"}</Text>
 
-        <Text
-          style={
-            styles.meta
-          }
-        >
-          Currency:{' '}
-          {
-            currency?.name
-          }{' '}
-          (
-          {
-            currency?.symbol
-          }
-          )
+        <Text style={styles.meta}>
+          Currency: {currency?.name} ({currency?.symbol})
         </Text>
       </View>
     </View>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    skeleton: {
-      height: 120,
+const styles = StyleSheet.create({
+  skeleton: {
+    height: 120,
 
-      backgroundColor:
-        Colors.card,
+    backgroundColor: Colors.card,
 
-      borderRadius: 16,
+    borderRadius: 16,
 
-      marginTop: 16,
-    },
+    marginTop: 16,
+  },
 
-    card: {
-      flexDirection: 'row',
+  card: {
+    flexDirection: "row",
 
-      backgroundColor:
-        Colors.card,
+    backgroundColor: Colors.card,
 
-      borderRadius: 16,
+    borderRadius: 16,
 
-      padding: 16,
+    padding: 16,
 
-      marginTop: 16,
-    },
+    marginTop: 16,
+  },
 
-    flag: {
-      width: 60,
+  flag: {
+    width: 60,
 
-      height: 40,
+    height: 40,
 
-      borderRadius: 8,
-    },
+    borderRadius: 8,
+  },
 
-    info: {
-      flex: 1,
+  info: {
+    flex: 1,
 
-      marginLeft: 16,
+    marginLeft: 16,
 
-      justifyContent:
-        'center',
-    },
+    justifyContent: "center",
+  },
 
-    name: {
-      fontSize: 16,
+  name: {
+    fontSize: 16,
 
-      fontWeight: 'bold',
+    fontWeight: "bold",
 
-      color:
-        Colors.textPrimary,
+    color: Colors.textPrimary,
 
-      marginBottom: 6,
-    },
+    marginBottom: 6,
+  },
 
-    meta: {
-      color:
-        Colors.textSecondary,
+  meta: {
+    color: Colors.textSecondary,
 
-      fontSize: 14,
+    fontSize: 14,
 
-      marginBottom: 2,
-    },
-  });
+    marginBottom: 2,
+  },
+});

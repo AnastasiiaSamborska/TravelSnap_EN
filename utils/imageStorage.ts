@@ -1,7 +1,7 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from "expo-file-system";
 
 function getTripDir(tripId: string): Directory {
-  return new Directory(Paths.document, 'trips', tripId);
+  return new Directory(Paths.document, "trips", tripId);
 }
 
 function ensureDir(dir: Directory): void {
@@ -10,9 +10,10 @@ function ensureDir(dir: Directory): void {
   }
 }
 
-// Copies a photo from cache/picker URI into a persistent per-trip folder.
-// Returns the new URI inside documentDirectory (safe after app restarts).
-export async function saveImageToTrip(uri: string, tripId: string): Promise<string> {
+export async function saveImageToTrip(
+  uri: string,
+  tripId: string,
+): Promise<string> {
   const dir = getTripDir(tripId);
   ensureDir(dir);
   const src = new File(uri);

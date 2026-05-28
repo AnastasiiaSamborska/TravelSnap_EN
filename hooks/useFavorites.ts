@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 
-const STORAGE_KEY = '@travelsnap_favorites';
+const STORAGE_KEY = "@travelsnap_favorites";
 
 interface UseFavorites {
   isLoading: boolean;
@@ -19,7 +19,7 @@ export function useFavorites(): UseFavorites {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored) setFavoriteTripIds(JSON.parse(stored));
       } catch (error) {
-        console.warn('Failed to load favorite trips from storage.', error);
+        console.warn("Failed to load favorite trips from storage.", error);
       } finally {
         setIsLoading(false);
       }
@@ -42,7 +42,7 @@ export function useFavorites(): UseFavorites {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextIds));
     } catch (error) {
       setFavoriteTripIds(previousIds);
-      console.warn('Failed to save favorite trips to storage.', error);
+      console.warn("Failed to save favorite trips to storage.", error);
     }
   };
 

@@ -1,14 +1,14 @@
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useTrips } from '@/contexts/TripContext';
-import { Colors } from '@/constants/Colors';
+import { Colors } from "@/constants/Colors";
+import { useTrips } from "@/contexts/TripContext";
 
 const PROFILE = {
-  name: 'Kajetan Kisielewski',
-  initials: 'KK',
-  joinDate: 'March 2026',
+  name: "Anastasiia Samborska",
+  initials: "SA",
+  joinDate: "March 2026",
 } as const;
 
 interface StatItem {
@@ -24,16 +24,16 @@ export default function ProfileScreen() {
     const avg =
       count > 0
         ? (trips.reduce((sum, trip) => sum + trip.rating, 0) / count).toFixed(1)
-        : '0.0';  
+        : "0.0";
     const countries = new Set(trips.map((trip) => trip.destination)).size;
 
     return { count, avg, countries };
   }, [trips]);
 
   const statItems: StatItem[] = [
-    { label: 'Trips', value: stats.count },
-    { label: 'Countries', value: stats.countries },
-    { label: 'Rating', value: stats.avg },
+    { label: "Trips", value: stats.count },
+    { label: "Countries", value: stats.countries },
+    { label: "Rating", value: stats.avg },
   ];
 
   return (
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 48,
     paddingHorizontal: 24,
   },
@@ -75,18 +75,18 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 9999,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   avatarInitials: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.background,
   },
   name: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.textPrimary,
   },
   joinDate: {
@@ -96,20 +96,20 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   statsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    width: '100%',
+    width: "100%",
   },
   statCard: {
     flex: 1,
     backgroundColor: Colors.card,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.primary,
   },
   statLabel: {

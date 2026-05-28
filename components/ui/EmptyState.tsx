@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
-import { Colors } from '@/constants/Colors';
+import { Colors } from "@/constants/Colors";
 
-type IoniconName = ComponentProps<typeof Ionicons>['name'];
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 interface EmptyStateProps {
   icon: IoniconName;
@@ -25,14 +25,14 @@ export default function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
 const styles = StyleSheet.create({
   container: {
     height: 300,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
   },
   title: {
     color: Colors.textPrimary,
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   subtitle: {
     color: Colors.textSecondary,
