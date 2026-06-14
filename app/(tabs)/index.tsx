@@ -1,10 +1,4 @@
-import {
-  ActivityIndicator,
-  FlatList,
-  Platform,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { ActivityIndicator, Platform, StyleSheet } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -12,17 +6,19 @@ import { useCallback, useMemo } from "react";
 
 import { useRouter } from "expo-router";
 
-import { Ionicons } from "@expo/vector-icons";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 import { useTrips } from "@/contexts/TripContext";
 
-import TripCard from "@/components/TripCard";
+import AnimatedTripCard from "@/components/AnimatedTripCard";
 
 import ScreenHeader from "@/components/ScreenHeader";
 
 import EmptyState from "@/components/ui/EmptyState";
 
 import TripStats from "@/components/TripStats";
+
+import AnimatedFAB from "@/components/AnimatedFAB";
 
 import { Colors } from "@/constants/Colors";
 
@@ -65,11 +61,12 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader tripCount={trips.length} />
 
-      <FlatList
+      <Animated.FlatList
         data={sortedTrips}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
         style={styles.container}
+        itemLayoutAnimation={LinearTransition.springify()}
         ListHeaderComponent={<TripStats trips={sortedTrips} />}
         ListEmptyComponent={
           <EmptyState
@@ -89,16 +86,16 @@ export default function HomeScreen() {
         maxToRenderPerBatch={8}
         windowSize={5}
         removeClippedSubviews={Platform.OS === "android"}
-        renderItem={({ item }) => (
-          <Pressable onPress={() => handleTripPress(item.id)}>
-            <TripCard {...item} onDelete={() => handleDeleteTrip(item.id)} />
-          </Pressable>
+        renderItem={({ item, index }) => (
+          <AnimatedTripCard
+            trip={item}
+            index={index}
+            onDelete={handleDeleteTrip}
+          />
         )}
       />
 
-      <Pressable style={styles.fab} onPress={() => router.push("/add-trip")}>
-        <Ionicons name="add" size={28} color={Colors.background} />
-      </Pressable>
+      <AnimatedFAB onPress={() => router.push("/add-trip")} />
     </SafeAreaView>
   );
 }
@@ -130,38 +127,5 @@ const styles = StyleSheet.create({
     padding: 16,
 
     paddingBottom: 96,
-  },
-
-  fab: {
-    position: "absolute",
-
-    bottom: 24,
-
-    right: 24,
-
-    width: 56,
-
-    height: 56,
-
-    borderRadius: 28,
-
-    backgroundColor: Colors.primary,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    elevation: 6,
-
-    shadowColor: "#000",
-
-    shadowOpacity: 0.3,
-
-    shadowRadius: 8,
-
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
   },
 });
