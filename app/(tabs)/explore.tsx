@@ -1,6 +1,9 @@
-import { FlatList, RefreshControl, StyleSheet } from "react-native";
-
-import { useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+} from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -10,56 +13,42 @@ import ErrorState from "@/components/ui/ErrorState";
 
 import { Colors } from "@/constants/Colors";
 
-const POPULAR = [
-  "Tokyo",
-  "Lisbon",
-  "Reykjavik",
-  "Bali",
-  "Cape Town",
-  "Kyoto",
-  "Marrakech",
-  "Patagonia",
-];
-
-const NETWORK_ERROR = false;
+import { useDestinationsQuery } from "@/hooks/useDestinationsQuery";
 
 export default function ExploreScreen() {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const {
+    data = [],
+    isLoading,
+    isError,
+    refetch,
+    isRefetching,
+  } = useDestinationsQuery();
 
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRetry = (): void => {
-    setRefreshKey((prev) => prev + 1);
-  };
-
-  const handleRefresh = (): void => {
-    setRefreshing(true);
-
-    setRefreshKey((prev) => prev + 1);
-
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  };
-
-  if (NETWORK_ERROR) {
+  if (isLoading) {
     return (
-      <ErrorState message="Failed to load destinations" onRetry={handleRetry} />
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorState message="Failed to load destinations" onRetry={refetch} />
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <FlatList
-        key={refreshKey}
-        data={POPULAR}
+        data={data}
         keyExtractor={(city) => city}
         renderItem={({ item }) => <DestinationCard city={item} />}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
+            refreshing={isRefetching}
+            onRefresh={refetch}
             tintColor={Colors.primary}
           />
         }
@@ -71,6 +60,16 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+
+    backgroundColor: Colors.background,
+  },
+
+  loadingContainer: {
+    flex: 1,
+
+    justifyContent: "center",
+
+    alignItems: "center",
 
     backgroundColor: Colors.background,
   },

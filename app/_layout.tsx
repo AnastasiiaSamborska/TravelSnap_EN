@@ -10,6 +10,10 @@ import { Colors } from "@/constants/Colors";
 
 import { TripProvider } from "@/contexts/TripContext";
 
+import { QueryProvider } from "@/providers/QueryProvider";
+
+import OfflineBanner from "@/components/OfflineBanner";
+
 const darkHeaderOptions = {
   headerStyle: {
     backgroundColor: Colors.background,
@@ -20,48 +24,52 @@ const darkHeaderOptions = {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView
-      style={{
-        flex: 1,
-      }}
-    >
-      <TripProvider>
-        <Stack screenOptions={darkHeaderOptions}>
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
-            }}
-          />
+    <QueryProvider>
+      <GestureHandlerRootView
+        style={{
+          flex: 1,
+        }}
+      >
+        <TripProvider>
+          <OfflineBanner />
 
-          <Stack.Screen
-            name="trip/[id]"
-            options={{
-              title: "Trip Details",
+          <Stack screenOptions={darkHeaderOptions}>
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
 
-              animation: "slide_from_bottom",
-            }}
-          />
+            <Stack.Screen
+              name="trip/[id]"
+              options={{
+                title: "Trip Details",
 
-          <Stack.Screen
-            name="add-trip"
-            options={{
-              title: "Add Trip",
+                animation: "slide_from_bottom",
+              }}
+            />
 
-              presentation: "modal",
-            }}
-          />
+            <Stack.Screen
+              name="add-trip"
+              options={{
+                title: "Add Trip",
 
-          <Stack.Screen
-            name="trip/gallery/[id]"
-            options={{
-              animation: "slide_from_right",
-            }}
-          />
-        </Stack>
+                presentation: "modal",
+              }}
+            />
 
-        <StatusBar style="light" />
-      </TripProvider>
-    </GestureHandlerRootView>
+            <Stack.Screen
+              name="trip/gallery/[id]"
+              options={{
+                animation: "slide_from_right",
+              }}
+            />
+          </Stack>
+
+          <StatusBar style="light" />
+        </TripProvider>
+      </GestureHandlerRootView>
+    </QueryProvider>
   );
 }

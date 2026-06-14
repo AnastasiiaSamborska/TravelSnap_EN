@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import type { Trip } from "@/types/trip";
+import type { Trip, TripData } from "@/types/trip";
 
 const STORAGE_KEY = "travelsnap_trips";
 
@@ -28,4 +28,28 @@ export async function loadTrips(): Promise<Trip[]> {
 
     return [];
   }
+}
+
+export async function saveTrip(data: TripData): Promise<Trip> {
+  const trips = await loadTrips();
+
+  const newTrip: Trip = {
+    ...data,
+
+    id: Date.now().toString(),
+  };
+
+  const updatedTrips = [newTrip, ...trips];
+
+  await saveTrips(updatedTrips);
+
+  return newTrip;
+}
+
+export async function deleteTrip(id: string): Promise<void> {
+  const trips = await loadTrips();
+
+  const updatedTrips = trips.filter((trip) => trip.id !== id);
+
+  await saveTrips(updatedTrips);
 }

@@ -8,7 +8,9 @@ import { useRouter } from "expo-router";
 
 import Animated, { LinearTransition } from "react-native-reanimated";
 
-import { useTrips } from "@/contexts/TripContext";
+import { useTripsQuery } from "@/hooks/useTripsQuery";
+
+import { useDeleteTrip } from "@/hooks/useTripMutations";
 
 import AnimatedTripCard from "@/components/AnimatedTripCard";
 
@@ -25,7 +27,9 @@ import { Colors } from "@/constants/Colors";
 const CARD_HEIGHT = 120;
 
 export default function HomeScreen() {
-  const { trips, deleteTrip, loading } = useTrips();
+  const { data: trips = [], isLoading } = useTripsQuery();
+
+  const { mutate: deleteTrip } = useDeleteTrip();
 
   const router = useRouter();
 
@@ -49,7 +53,7 @@ export default function HomeScreen() {
     [deleteTrip],
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
