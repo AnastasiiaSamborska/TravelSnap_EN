@@ -1,270 +1,581 @@
-# Task 10 - Performance & Images
+# Task 12 - Animations & Gestures
 
 ## Goal
 
-Optimize TravelSnap for production-level performance. You will tune the
-FlatList with performance props, add memoization where it actually
-matters, and replace the default React Native `Image` component with
-`expo-image` featuring disk caching, transitions, and blurhash placeholders.
+Elevate TravelSnap from a functional app to a polished native-feeling product by adding fluid animations and gesture interactions. You will implement animated list entry, spring-powered tap feedback, swipe-to-delete with gestures, an animated FAB, and — optionally - skeleton loading, shared element transitions, and a parallax header.
 
 ---
 
-## Step 0 - Setup
+## Step 0 - Installation & Configuration
 
-Install `expo-image`:
+**Goal:** install the libraries and configure the environment so shared values work correctly.
+
+**Files:** `package.json`, `app/_layout.tsx` *(+ `babel.config.js` only on SDK ≤ 51)*
+
+### Step 0a - check your Expo SDK version
+
+Open `package.json` and find the `"expo"` field:
+
+```json
+// package.json (excerpt)
+{
+  "dependencies": {
+    "expo": "~52.0.0"   // <-- check this number
+  }
+}
+```
+
+- **SDK 52 or higher** → New Architecture is active by default; reanimated works without any Babel config - **skip to 0c**
+- **SDK 51 or lower** → Babel plugin is required - **complete 0b first, then 0c**
+
+### Step 0b - Babel plugin *(SDK ≤ 51 only)*
+
+If you don't have a `babel.config.js`, create one in the project root. Add the reanimated plugin as the **last** entry in the `plugins` array:
+
+```js
+// babel.config.js
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      // ... any other plugins
+      'react-native-reanimated/plugin', // MUST be last!
+    ],
+  };
+};
+```
+
+After saving, clear the Metro cache:
 
 ```bash
-npx expo install expo-image
+npx expo start --clear
 ```
 
-Verify that `expo-image` appears in `package.json` under `dependencies`.
+> **Why last?** Reanimated must process code after all other transforms. If it isn't last, shared values are silently ignored — no errors, no animations.
+
+### Step 0c - install packages and add GestureHandlerRootView
+
+```bash
+npx expo install react-native-reanimated react-native-gesture-handler
+```
+
+```tsx
+// app/_layout.tsx
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* rest of navigation */}
+    </GestureHandlerRootView>
+  );
+}
+```
+
+> **Pitfall:** `GestureHandlerRootView` must wrap the ENTIRE app tree — adding it to a single screen means gestures silently fail on all other screens.
 
 ---
 
-## Step 1 - FlatList tuning in `app/(tabs)/index.tsx`
+## Step 1 - useSharedValue + useAnimatedStyle
 
-**Goal:** Eliminate unnecessary element measurements and limit how many cards are rendered at once.
+**Goal:** understand the fundamentals of reanimated: shared values and animated styles.
 
-In `app/(tabs)/index.tsx`, add performance props to your `<FlatList>`:
+**Files:** any test component, or directly in `components/AnimatedTripCard.tsx`
+
+**Requirements:**
+1. Use `useSharedValue` to hold an animated value (e.g. opacity, scale).
+2. Use `useAnimatedStyle` to map the value to a style object.
+3. Wrap the view in `Animated.View` (from reanimated).
 
 ```tsx
-const CARD_HEIGHT = 120;
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
-<FlatList
-  data={trips}
-  keyExtractor={(item) => item.id}
-  getItemLayout={(_, index) => ({
-    length: CARD_HEIGHT,
-    offset: CARD_HEIGHT * index,
-    index,
-  })}
-  initialNumToRender={10}
-  windowSize={5}
-  renderItem={({ item }) => <TripCard trip={item} onPress={handleTripPress} />}
-/>;
+function AnimatedBox() {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.box, animatedStyle]}>
+      {/* content */}
+    </Animated.View>
+  );
+}
 ```
 
-### Requirements
-
-1. `keyExtractor` returns `item.id` (a string).
-2. `getItemLayout` relies on a `CARD_HEIGHT` constant - measure the actual card height and adjust the value.
-3. `initialNumToRender={10}` - render 10 cards on mount (not the entire list).
-4. `windowSize={5}` - keep 5 screens-worth of items in memory (2 before, current, 2 after).
-
-> **Pitfall:** `getItemLayout` only works correctly when every item has the same height. If your `TripCard` wraps titles onto two lines, either measure the maximum height and use that, or drop `getItemLayout` entirely.
+> **Pitfall:** Do NOT use `Animated.View` from `react-native` together with `useAnimatedStyle` from reanimated - they are two separate animation systems that do not interoperate.
 
 ---
 
-## Step 2 - `React.memo` on `TripCard`
+## Step 2 - List Entry Animation (FadeInDown)
 
-**Goal:** Prevent re-renders of cards whose props have not changed.
+**Goal:** TripCard items appear with an entry animation on first render.
 
-### 2a. Wrap `TripCard` with `React.memo`
+**Files:** `components/AnimatedTripCard.tsx`, `app/(tabs)/index.tsx`
 
-In `components/TripCard.tsx`:
+**Requirements:**
+1. Wrap the card in `Animated.View` with the `entering` prop.
+2. Use `FadeInDown.delay(index * 80).springify()` - each card with a different delay.
+3. In `app/(tabs)/index.tsx` replace `FlatList` with `Animated.FlatList` and render `AnimatedTripCard`.
 
 ```tsx
-import React from "react";
+// components/AnimatedTripCard.tsx
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
-interface TripCardProps {
+interface AnimatedTripCardProps {
   trip: Trip;
-  onPress: (id: string) => void;
+  index: number;
+  onDelete: (id: string) => void;
 }
 
-export const TripCard = React.memo(function TripCard({
-  trip,
-  onPress,
-}: TripCardProps) {
-  // ...existing component code
+export function AnimatedTripCard({ trip, index, onDelete }: AnimatedTripCardProps) {
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 80).springify()}>
+      <TripCard trip={trip} onDelete={onDelete} />
+    </Animated.View>
+  );
+}
+```
+
+```tsx
+// app/(tabs)/index.tsx - fragment
+import Animated from 'react-native-reanimated';
+
+<Animated.FlatList
+  data={trips}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item, index }) => (
+    <AnimatedTripCard
+      trip={item}
+      index={index}
+      onDelete={deleteTrip}
+    />
+  )}
+/>
+```
+
+> **Pitfall:** The standard React Native `FlatList` ignores the `entering` prop on its items. You must use `Animated.FlatList` from reanimated.
+
+---
+
+## Step 3 - Tap Feedback (Scale Spring)
+
+**Goal:** the card "bounces" on tap - a native-feeling touch interaction.
+
+**Files:** `components/AnimatedTripCard.tsx`
+
+**Requirements:**
+1. Add `Gesture.Tap()` from `react-native-gesture-handler`.
+2. On `onBegin` shrink scale to `0.97`, on `onFinalize` return to `1.0`.
+3. Wrap the card in `GestureDetector` inside `Animated.View`.
+
+```tsx
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+
+export function AnimatedTripCard({ trip, index, onDelete }: AnimatedTripCardProps) {
+  const scale = useSharedValue(1);
+
+  const tapGesture = Gesture.Tap()
+    .onBegin(() => {
+      scale.value = withSpring(0.97, { damping: 15, stiffness: 400 });
+    })
+    .onFinalize(() => {
+      scale.value = withSpring(1.0, { damping: 10, stiffness: 200 });
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 80).springify()}
+      style={animatedStyle}
+    >
+      <GestureDetector gesture={tapGesture}>
+        <TripCard trip={trip} onDelete={onDelete} />
+      </GestureDetector>
+    </Animated.View>
+  );
+}
+```
+
+---
+
+## Step 4 - Layout Animations (Smooth Removal)
+
+**Goal:** when a card is deleted the remaining cards smoothly fill the gap.
+
+**Files:** `components/AnimatedTripCard.tsx`, `app/(tabs)/index.tsx`
+
+**Requirements:**
+1. Add `exiting={FadeOutLeft.springify()}` to the card's `Animated.View`.
+2. Add `itemLayoutAnimation={LinearTransition.springify()}` to `Animated.FlatList`.
+3. Ensure `keyExtractor` returns stable, unique keys.
+
+```tsx
+// Animated.View on the card
+<Animated.View
+  entering={FadeInDown.delay(index * 80).springify()}
+  exiting={FadeOutLeft.springify()}
+  style={animatedStyle}
+>
+
+// Animated.FlatList
+<Animated.FlatList
+  data={trips}
+  keyExtractor={(item) => item.id}
+  itemLayoutAnimation={LinearTransition.springify()}
+  renderItem={...}
+/>
+```
+
+> **Pitfall:** `Layout.springify()` (old API) is deprecated. Use `itemLayoutAnimation` on the FlatList with `LinearTransition.springify()` or `CurvedTransition`.
+
+---
+
+## Step 5 - Swipe-to-Delete (Pan Gesture)
+
+**Goal:** swiping a card left past a threshold removes it with animation.
+
+**Files:** `components/AnimatedTripCard.tsx`
+
+**Requirements:**
+1. Add `useSharedValue` for `translateX`.
+2. Configure `Gesture.Pan()` - update `translateX` in `onUpdate`, check threshold (-80px) in `onEnd`.
+3. If threshold exceeded: animate to `-500`, then call `runOnJS(onDelete)(trip.id)`.
+4. If threshold not exceeded: spring back to `0`.
+
+```tsx
+import { runOnJS } from 'react-native-reanimated';
+
+export function AnimatedTripCard({ trip, index, onDelete }: AnimatedTripCardProps) {
+  const translateX = useSharedValue(0);
+  const scale = useSharedValue(1);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((e) => {
+      if (e.translationX < 0) {
+        translateX.value = e.translationX;
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationX < -80) {
+        translateX.value = withTiming(-500, { duration: 300 }, (finished) => {
+          if (finished) runOnJS(onDelete)(trip.id);
+        });
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const tapGesture = Gesture.Tap()
+    .onBegin(() => { scale.value = withSpring(0.97); })
+    .onFinalize(() => { scale.value = withSpring(1.0); });
+
+  // Compose: tap and pan work simultaneously
+  const composedGesture = Gesture.Simultaneous(tapGesture, panGesture);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 80).springify()}
+      exiting={FadeOutLeft.springify()}
+    >
+      <GestureDetector gesture={composedGesture}>
+        <Animated.View style={animatedStyle}>
+          <TripCard trip={trip} onDelete={onDelete} />
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
+  );
+}
+```
+
+> **Pitfall:** `runOnJS` is required - you cannot call `onDelete` (a JS function) directly from the `.onEnd` callback because it runs on the UI thread.
+
+---
+
+## Step 6 - Animated FAB (Floating Action Button)
+
+**Goal:** a "+" button that appears with animation and rotates on tap.
+
+**Files:** `components/FAB.tsx`, `app/(tabs)/index.tsx`
+
+**Requirements:**
+1. Use `withSpring` to animate scale on mount.
+2. Add `useSharedValue` for rotation - rotate 45 degrees on tap.
+3. Accept `onPress` as a prop, call it via `runOnJS`.
+
+```tsx
+// components/FAB.tsx
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useEffect } from 'react';
+
+interface FABProps {
+  onPress: () => void;
+}
+
+export function FAB({ onPress }: FABProps) {
+  const scale = useSharedValue(0);
+  const rotation = useSharedValue(0);
+  const isOpen = useSharedValue(false);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+  }, []);
+
+  const tapGesture = Gesture.Tap().onEnd(() => {
+    isOpen.value = !isOpen.value;
+    rotation.value = withSpring(isOpen.value ? 45 : 0, { damping: 10 });
+    runOnJS(onPress)();
+  });
+
+  const fabStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { rotate: `${rotation.value}deg` },
+    ],
+  }));
+
+  return (
+    <GestureDetector gesture={tapGesture}>
+      <Animated.View style={[styles.fab, fabStyle]}>
+        <Text style={styles.fabIcon}>+</Text>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+const styles = StyleSheet.create({
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#61DAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  fabIcon: {
+    fontSize: 28,
+    color: '#0A1628',
+    fontWeight: 'bold',
+    lineHeight: 30,
+  },
 });
 ```
 
-### 2b. Stabilize handlers in the parent
+---
 
-In `app/(tabs)/index.tsx`:
+## Step 7: Skeleton Loading (Shimmer)
+
+**Goal:** display an animated placeholder while API data loads.
+
+**Files:** `components/SkeletonCard.tsx`, `app/(tabs)/explore.tsx`
+
+**Requirements:**
+1. Use `useSharedValue` + `withRepeat(withTiming(...), -1, true)` for the shimmer animation.
+2. Interpolate the value to opacity (e.g. 0.3 → 1.0 → 0.3).
+3. Render several gray rectangles shaped like a card.
 
 ```tsx
-import { useCallback } from "react";
+// components/SkeletonCard.tsx
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
 
-const handleTripPress = useCallback(
-  (id: string) => {
-    router.push(`/trip/${id}`);
-  },
-  [router],
-);
+export function SkeletonCard() {
+  const shimmer = useSharedValue(0.3);
+
+  useEffect(() => {
+    shimmer.value = withRepeat(
+      withTiming(1.0, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+      -1,    // infinite repetitions
+      true   // reverse (pulsing effect)
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmer.value,
+  }));
+
+  return (
+    <Animated.View style={[styles.card, shimmerStyle]}>
+      <View style={styles.imagePlaceholder} />
+      <View style={styles.titlePlaceholder} />
+      <View style={styles.subtitlePlaceholder} />
+    </Animated.View>
+  );
+}
 ```
 
-### Requirements
-
-1. `TripCard` is exported as `React.memo(function TripCard(...))`.
-2. The `onPress` handler in the parent is wrapped in `useCallback` - without this, `React.memo` has no effect (every parent render creates a new function reference).
-3. Verify in the React DevTools Profiler that `TripCard` does not re-render when unrelated state changes.
-
-> **Pitfall:** `React.memo` compares props shallowly. If you pass an inline object to `TripCard` (e.g. `style={{ margin: 10 }}`), memo will still re-render - move the style to `StyleSheet.create`.
+> **Pitfall:** `withRepeat(-1, true)` - `-1` means infinite repetitions, `true` enables reverse (breathing shimmer). Without `true`, the shimmer jumps abruptly back to the start value.
 
 ---
 
-## Step 3 — Migrate to `expo-image`
+## Step 8: Shared Element Transition
 
-**Goal:** Replace the default React Native `Image` with the more performant `expo-image` featuring caching and transitions.
+**Goal:** the photo from the list card "flows" animatedly to the detail screen.
 
-### 3a. `TripCard.tsx`
+**Files:** `components/AnimatedTripCard.tsx`, `app/trip/[id].tsx`
 
-```tsx
-// BEFORE:
-import { Image } from "react-native";
-<Image source={{ uri: trip.imageUrl }} resizeMode="cover" />;
-
-// AFTER:
-import { Image } from "expo-image";
-<Image
-  source={{ uri: trip.imageUrl }}
-  contentFit="cover"
-  cachePolicy="memory-disk"
-  transition={200}
-  style={styles.image}
-/>;
-```
-
-### 3b. `DestinationCard.tsx` and `CountryCard.tsx`
-
-Same pattern - change the import and replace `resizeMode` with `contentFit`.
-
-### 3c. Hero image in `app/trip/[id].tsx`
+**Requirements:**
+1. Add `sharedTransitionTag` to the Image on the list card.
+2. Add the same `sharedTransitionTag` to the Image on the detail screen.
+3. The tag must be unique per trip (e.g. `trip-image-${trip.id}`).
 
 ```tsx
-import { Image } from "expo-image";
+// On list card (AnimatedTripCard.tsx)
+import Animated from 'react-native-reanimated';
 
-<Image
-  source={{ uri: trip.imageUrl }}
-  contentFit="cover"
-  cachePolicy="memory-disk"
-  transition={300}
-  style={styles.heroImage}
-/>;
-```
+<Animated.Image
+  source={{ uri: trip.imageUri }}
+  sharedTransitionTag={`trip-image-${trip.id}`}
+  style={styles.cardImage}
+/>
 
-### Requirements
-
-1. All 4 files: change the import to `expo-image`.
-2. Replace `resizeMode` → `contentFit` (same values: `"cover"`, `"contain"`).
-3. Add `cachePolicy="memory-disk"` and `transition={200}` (or 300 for hero).
-
-> **Pitfall:** `expo-image` does not have `defaultSource`. If you were using it in React Native, replace with `placeholder={{ uri: localAsset }}` or `placeholder={{ blurhash: '...' }}`.
-
----
-
-## Step 4 - Blurhash placeholder on hero image
-
-**Goal:** Show an elegant gradient placeholder instead of empty space while the hero image loads.
-
-In `app/trip/[id].tsx`:
-
-```tsx
-<Image
-  source={{ uri: trip.imageUrl }}
-  placeholder={{ blurhash: "LGF5]+Yk^6#M@-5c,1J5@[or[Q6." }}
-  contentFit="cover"
-  cachePolicy="memory-disk"
-  transition={300}
-  style={styles.heroImage}
+// On detail screen (app/trip/[id].tsx)
+<Animated.Image
+  source={{ uri: trip.imageUri }}
+  sharedTransitionTag={`trip-image-${trip.id}`}
+  style={styles.detailImage}
 />
 ```
 
-### Requirements
-
-1. Add the `placeholder` prop with a `{ blurhash: '...' }` object.
-2. Generate your own blurhash at https://blurha.sh or use the sample string above.
-3. Confirm that a colored gradient is visible before the image loads, followed by a smooth transition.
-
-> **Pitfall:** A blurhash is a ~20-30 character string - it requires no fetch and is compiled into the JS bundle. Hardcode it; do not generate it dynamically.
+> **Pitfall:** `sharedTransitionTag` is case-sensitive. `"trip-image-1"` and `"Trip-Image-1"` are different tags - the transition will not work.
 
 ---
 
-## Step 5 - `useMemo` for sorted trip list
+## Step 9: Parallax Header
 
-**Goal:** Memoize an expensive computation so it does not re-run on every render.
+**Goal:** the header image on the detail screen scales and translates on scroll.
 
-In `app/(tabs)/index.tsx`:
+**Files:** `app/trip/[id].tsx`
+
+**Requirements:**
+1. Use `Animated.ScrollView` (from reanimated) and `useScrollViewOffset` to track scroll position.
+2. Interpolate scroll offset to `translateY` and `scale` of the header.
+3. The header should scroll slower than the content (parallax effect).
 
 ```tsx
-import { useMemo } from "react";
+import Animated, {
+  useAnimatedRef,
+  useScrollViewOffset,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 
-const sortedTrips = useMemo(() => {
-  return [...trips].sort((a, b) => b.rating - a.rating);
-}, [trips]);
+const HEADER_HEIGHT = 280;
+
+export default function TripDetail() {
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollY = useScrollViewOffset(scrollRef);
+
+  const headerStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      scrollY.value,
+      [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
+      [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75],
+      Extrapolation.CLAMP
+    );
+    const scale = interpolate(
+      scrollY.value,
+      [-HEADER_HEIGHT, 0],
+      [2, 1],
+      Extrapolation.CLAMP
+    );
+    return { transform: [{ translateY }, { scale }] };
+  });
+
+  return (
+    <Animated.ScrollView ref={scrollRef}>
+      <Animated.View style={[styles.header, headerStyle]}>
+        <Image source={{ uri: trip.imageUri }} style={styles.headerImage} />
+      </Animated.View>
+      {/* rest of content */}
+    </Animated.ScrollView>
+  );
+}
 ```
 
-### Requirements
+---
 
-1. Wrap the sorted / filtered list in `useMemo`.
-2. The dependency array contains `[trips]` - recomputes only when the trips array changes.
-3. Pass `sortedTrips` (not `trips`) to `<FlatList data={...}>`.
+## Step 10: Gesture-Based Rating
 
-> **Pitfall:** Do not wrap trivial operations like `trips.length` or `x + 1` in `useMemo`. The hook has overhead (closure allocation, dep-check, GC) - for cheap operations the hook costs more than it saves.
+**Goal:** drag a finger across the stars to set the rating instead of tapping individual stars.
+
+**Files:** `components/RatingStars.tsx`
+
+**Requirements:**
+1. Measure the stars container width via `onLayout`.
+2. Add `Gesture.Pan()` - in `onUpdate` compute rating from `translationX / (containerWidth / maxStars)`.
+3. Call `runOnJS(onRatingChange)(newRating)` on each change.
 
 ---
 
-## Step 6 - Additional FlatList props
+## Step 11: Staggered Grid Animation
 
-**Goal:** Fine-tune `removeClippedSubviews` and `maxToRenderPerBatch` for better RAM usage and fill-rate.
+**Goal:** cards on the Explore tab appear in a cascading sequence.
 
-```tsx
-<FlatList
-  data={sortedTrips}
-  keyExtractor={(item) => item.id}
-  getItemLayout={(_, index) => ({
-    length: CARD_HEIGHT,
-    offset: CARD_HEIGHT * index,
-    index,
-  })}
-  initialNumToRender={10}
-  maxToRenderPerBatch={8}
-  windowSize={5}
-  removeClippedSubviews={true}
-  renderItem={({ item }) => <TripCard trip={item} onPress={handleTripPress} />}
-/>
-```
+**Files:** `app/(tabs)/explore.tsx`
 
-### Requirements
-
-1. `removeClippedSubviews={true}` - unmounts off-screen views (mainly benefits Android).
-2. `maxToRenderPerBatch={8}` - render 8 items per batch while scrolling.
-3. Test on a physical device (emulators do not reflect real-world performance).
-
-> **Pitfall:** `removeClippedSubviews` on iOS can cause visual artifacts (blank spaces during fast scrolling). If you see issues, disable on iOS only: `removeClippedSubviews={Platform.OS === 'android'}`.
+**Requirements:**
+1. Wrap each `DestinationCard` in `Animated.View` with `entering`.
+2. Use `FadeInDown.delay(index * 100).springify()`.
+3. Add extra offset delay for the right column (e.g. `index * 100 + (column * 50)`).
 
 ---
 
-## Step 7 - List pagination (STRETCH)
+## Step 12: Heart Animation (Like)
 
-**Goal:** Simulate infinite-scroll data loading.
+**Goal:** the like button on a card explodes with a spring animation and changes color.
 
-1. Create `utils/dummyTrips.ts` - a function that generates 200 dummy trips.
-2. Keep `visibleTrips` in state - start with the first 20.
-3. Add to `FlatList`:
+**Files:** `components/AnimatedTripCard.tsx` or a new `components/LikeButton.tsx`
 
-```tsx
-onEndReached={loadMore}
-onEndReachedThreshold={0.5}
-ListFooterComponent={isLoadingMore ? <ActivityIndicator /> : null}
-```
-
-4. `loadMore` appends the next 20 items with a 500ms delay (`setTimeout`).
-
-> **Pitfall:** `onEndReached` can fire multiple times before the first load completes. Use an `isLoadingMore` flag to ignore duplicate calls.
+**Requirements:**
+1. `useSharedValue` for heart scale and color.
+2. On tap: `withSequence(withSpring(1.4), withSpring(1.0))`.
+3. Smooth color transition: interpolate from gray to accent red.
 
 ---
 
-## Step 8 - Profiling session with React DevTools (STRETCH)
-
-**Goal:** Measure the actual impact of your optimizations.
-
-1. Open React DevTools → Profiler tab.
-2. Record a session: open the list, scroll 3 times, navigate back.
-3. Check: how many times `TripCard` re-rendered, list render duration, whether `useMemo` prevents recomputation.
-4. Take a screenshot and attach it to your PR.
-
-> **Pitfall:** The Profiler in dev mode is slower than a production build. Do not treat absolute milliseconds as truth - what matters is the relative difference (before vs after).
-
----
